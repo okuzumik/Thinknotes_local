@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ThinkNotes</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
@@ -44,25 +45,26 @@ body {
 .nav-group { display:flex; flex-direction:column; }
 .nav-group-label {
   font-family:'Hiragino Kaku Gothic ProN',sans-serif;
-  font-size:8.5px; letter-spacing:.1em; text-align:center;
-  padding:5px 8px 2px; line-height:1; font-weight:600;
+  font-size:8px; letter-spacing:.05em; text-align:center;
+  padding:4px 10px 3px; line-height:1; font-weight:700;
+  border-radius:3px 3px 0 0; margin:4px 4px 0;
 }
 .nav-group-tabs { display:flex; flex:1; align-items:flex-end; }
-.nav-divider { width:0.5px; background:var(--border); margin:8px 3px 4px; flex-shrink:0; }
+.nav-divider { width:0.5px; background:var(--border); margin:8px 2px 4px; flex-shrink:0; }
 
-/* ログ：青みグレー */
-.nav-group.g-log .nav-group-label { color:#6a8fa8; }
-.nav-group.g-log .phase-step.active { color:#3d7a9c; border-bottom-color:#3d7a9c; }
-.nav-group.g-log .phase-step:hover { color:#5a8fad; }
+/* 書きためる：青みグレー */
+.nav-group.g-log .nav-group-label { color:#fff; background:#4e7fa0; }
+.nav-group.g-log .phase-step.active { color:#4e7fa0; border-bottom-color:#4e7fa0; font-weight:700; }
+.nav-group.g-log .phase-step:hover { color:#4e7fa0; }
 
-/* 思考：アンバー */
-.nav-group.g-think .nav-group-label { color:var(--accent-d); }
-.nav-group.g-think .phase-step.active { color:var(--accent); border-bottom-color:var(--accent); }
+/* 束ねる：アンバー */
+.nav-group.g-think .nav-group-label { color:#fff; background:var(--accent); }
+.nav-group.g-think .phase-step.active { color:var(--accent); border-bottom-color:var(--accent); font-weight:700; }
 .nav-group.g-think .phase-step:hover { color:var(--accent-d); }
 
-/* 執筆：テール */
-.nav-group.g-write .nav-group-label { color:var(--teal); }
-.nav-group.g-write .phase-step.active { color:var(--teal); border-bottom-color:var(--teal); }
+/* 執筆する：テール */
+.nav-group.g-write .nav-group-label { color:#fff; background:var(--teal); }
+.nav-group.g-write .phase-step.active { color:var(--teal); border-bottom-color:var(--teal); font-weight:700; }
 .nav-group.g-write .phase-step:hover { color:var(--teal); }
 
 .phase-step {
@@ -866,12 +868,29 @@ body {
 <body>
 
 <!-- ログインオーバーレイ -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-box">
+    <div class="login-title">ThinkNotes</div>
+    <div class="login-sub">メールアドレスとパスワードでログイン<br>初回は「新規登録」を押してください</div>
+    <input class="login-input" type="email" id="loginEmail" placeholder="メールアドレス"
+      onkeydown="if(event.key==='Enter')document.getElementById('loginPw').focus()">
+    <input class="login-input" type="password" id="loginPw" placeholder="パスワード（6文字以上）"
+      onkeydown="if(event.key==='Enter')signInWithPassword()">
+    <button class="login-btn" id="loginBtn" onclick="signInWithPassword()">ログイン</button>
+    <button onclick="signUpWithPassword()" style="width:100%;padding:9px;background:none;border:0.5px solid var(--border2);border-radius:var(--rsm);font-family:'Hiragino Kaku Gothic ProN',sans-serif;font-size:13px;color:var(--text2);cursor:pointer;">新規登録</button>
+    <div class="login-msg" id="loginMsg"></div>
+    <div style="text-align:center;margin-top:4px;">
+      <button onclick="importBackup()" style="background:none;border:none;cursor:pointer;font-family:'Hiragino Kaku Gothic ProN',sans-serif;font-size:11px;color:var(--text3);text-decoration:underline;">バックアップから復元</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── Topbar ── -->
 <div class="topbar">
   <div class="app-name">ThinkNotes</div>
   <div class="phase-steps" id="mainNav">
     <div class="nav-group g-log">
-      <div class="nav-group-label">ログ</div>
+      <div class="nav-group-label">書きためる・閲覧する</div>
       <div class="nav-group-tabs">
         <button class="phase-step active" id="ps-1" onclick="switchPhase(1)">タイムライン</button>
         <button class="phase-step" id="ps-2" onclick="switchPhase(2)">カレンダー</button>
@@ -879,7 +898,7 @@ body {
     </div>
     <div class="nav-divider"></div>
     <div class="nav-group g-think">
-      <div class="nav-group-label">思考</div>
+      <div class="nav-group-label">束ねる・攪拌する</div>
       <div class="nav-group-tabs">
         <button class="phase-step" id="ps-3" onclick="switchPhase(3)">アウトライン</button>
         <button class="phase-step" id="ps-5" onclick="switchPhase(5)">カード</button>
@@ -887,7 +906,7 @@ body {
     </div>
     <div class="nav-divider"></div>
     <div class="nav-group g-write">
-      <div class="nav-group-label">執筆</div>
+      <div class="nav-group-label">執筆する・整える</div>
       <div class="nav-group-tabs">
         <button class="phase-step" id="ps-4" onclick="switchPhase(4)">ノート</button>
       </div>
@@ -895,10 +914,14 @@ body {
   </div>
   <div class="topbar-right">
     <div class="sync-dot" id="syncDot" title="保存状態"></div>
-    <div id="fileSyncStatus" style="font-family:'Hiragino Kaku Gothic ProN',sans-serif;font-size:10px;color:var(--text3);display:none;"></div>
-    <button class="logout-btn" onclick="pickSyncFile()" title="Dropbox/iCloudのJSONファイルを選択">📂 ファイルを開く</button>
-    <button class="logout-btn" onclick="exportBackup()" title="JSONに書き出し">💾 書き出し</button>
-    <button class="logout-btn" onclick="openBskySettings()" id="bskySettingsBtn" title="Bluesky連携設定">🦋 Bsky設定</button>
+    <div class="user-badge" id="userBadge" style="display:none">
+      <span id="userEmail" style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+      <button class="logout-btn" onclick="exportBackup()" title="データをバックアップ" style="border-color:var(--border2)">💾 バックアップ</button>
+      <button class="logout-btn" onclick="showDiag()" title="診断" id="diagBtn">🔍 診断</button>
+      <button class="logout-btn" onclick="forceSyncFromSupabase()" title="Supabaseから再読み込み" id="syncBtn">🔄 同期</button>
+      <button class="logout-btn" onclick="openBskySettings()" id="bskySettingsBtn" title="Bluesky連携設定">🦋 Bsky設定</button>
+      <button class="logout-btn" onclick="signOut()">ログアウト</button>
+    </div>
     <div class="search-wrap" id="searchWrap">
       <span class="search-icon">🔍</span>
       <input class="search-in" id="searchIn" placeholder="検索…" oninput="onSearch(this.value)">
@@ -955,8 +978,8 @@ body {
     <!-- モバイル用Bskyバー -->
     <div class="mobile-bsky-bar" id="mobileBskyBar" style="display:none">
       <button onclick="openBskySettings()" id="mobileBskyBtn">🦋 Bsky設定</button>
-      
-      <button onclick="exportBackup()" style="padding:5px 12px;background:none;border:0.5px solid var(--border2);border-radius:20px;font-family:'Hiragino Kaku Gothic ProN',sans-serif;font-size:12px;color:var(--text2);cursor:pointer;">💾 書き出し</button>
+      <button onclick="showDiag()" style="padding:5px 12px;background:none;border:0.5px solid var(--border2);border-radius:20px;font-family:'Hiragino Kaku Gothic ProN',sans-serif;font-size:12px;color:var(--text2);cursor:pointer;">🔍 診断</button>
+      <button onclick="forceSyncFromSupabase()" style="padding:5px 12px;background:none;border:0.5px solid var(--border2);border-radius:20px;font-family:'Hiragino Kaku Gothic ProN',sans-serif;font-size:12px;color:var(--text2);cursor:pointer;">🔄 同期</button>
     </div>
     <!-- 選択バー -->
     <div class="sel-bar" id="selBar">
@@ -1302,164 +1325,1131 @@ body {
 </div>
 
 <script>
-// ─── ローカルファイル同期 ────────────────────────────────
-// Supabaseの代わりにFile System Access APIでDropbox/iCloudフォルダのJSONファイルと同期
-let syncFileHandle=null;
-let fileSyncSupported='showOpenFilePicker' in window;
+// ─── Supabase ─────────────────────────────────────────────
+const SUPA_URL='https://ojdvyoubvhmtslvxfsxl.supabase.co';
+const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qZHZ5b3VidmhtdHNsdnhmc3hsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3NDg1ODEsImV4cCI6MjA5MTMyNDU4MX0.ah01RDXey3g0KB_xsj3hkBlyaNHt9YIyCjSluHCzlRI';
+const sb=window.supabase.createClient(SUPA_URL,SUPA_KEY);
+let currentUser=null;
 
-// ─── IndexedDB でファイルハンドルを永続化（次回起動時に自動接続）───
-const IDB_NAME='thinknotes_fh',IDB_STORE='handles',IDB_KEY='syncFile';
-function openHandleDB(){
-  return new Promise((res,rej)=>{
-    const req=indexedDB.open(IDB_NAME,1);
-    req.onupgradeneeded=e=>e.target.result.createObjectStore(IDB_STORE);
-    req.onsuccess=e=>res(e.target.result);req.onerror=rej;
+// セッションをlocalStorageから直接読む（getSession()のハング回避）
+function getStoredSession(){
+  const key=`sb-ojdvyoubvhmtslvxfsxl-auth-token`;
+  try{
+    const raw=localStorage.getItem(key);
+    if(!raw)return null;
+    const parsed=JSON.parse(raw);
+    // access_token と user があれば有効とみなす
+    if(parsed?.access_token&&parsed?.user)return parsed;
+    // 配列形式の場合（古いSupabase）
+    if(Array.isArray(parsed)&&parsed[0]?.access_token)return parsed[0];
+    return null;
+  }catch(e){return null;}
+}
+
+async function initAuth(){
+  const stored=getStoredSession();
+  if(stored){
+    try{
+      // トークンをセット（refresh_tokenがあれば自動更新される）
+      const {data,error}=await sb.auth.setSession({
+        access_token:stored.access_token,
+        refresh_token:stored.refresh_token||''
+      });
+      if(data?.session){
+        currentUser=data.session.user;
+        // 書き込みテストで実際に認証が通るか確認
+        const {error:te}=await sb.from('thinkdata').upsert(
+          {user_id:currentUser.id,data_key:'_ping',data_value:{t:Date.now()},updated_at:new Date().toISOString()},
+          {onConflict:'user_id,data_key'}
+        );
+        if(te){
+          console.warn('write test failed, trying refresh:',te.message);
+          // 書き込みに失敗したらトークンを強制リフレッシュ
+          const {data:rd}=await sb.auth.refreshSession();
+          if(rd?.session)currentUser=rd.session.user;
+        }
+        showApp();
+        await loadFromSupabase();
+        return;
+      }
+      if(error)console.warn('setSession error:',error.message);
+    }catch(e){console.warn('setSession failed:',e);}
+  }
+  showLogin();
+  sb.auth.onAuthStateChange(async(event,session)=>{
+    if((event==='SIGNED_IN'||event==='TOKEN_REFRESHED')&&session&&!currentUser){
+      currentUser=session.user;showApp();await loadFromSupabase();
+    } else if(event==='SIGNED_OUT'){
+      currentUser=null;showLogin();
+    }
   });
 }
-async function saveHandleToDB(handle){
-  try{const db=await openHandleDB();const tx=db.transaction(IDB_STORE,'readwrite');
-    tx.objectStore(IDB_STORE).put(handle,IDB_KEY);
-    await new Promise((res,rej)=>{tx.oncomplete=res;tx.onerror=rej;});db.close();}
-  catch(e){console.warn('saveHandle:',e);}
+function showLogin(){
+  document.getElementById('loginOverlay').style.display='flex';
+  document.getElementById('userBadge').style.display='none';
 }
-async function loadHandleFromDB(){
-  try{const db=await openHandleDB();const tx=db.transaction(IDB_STORE,'readonly');
-    const req=tx.objectStore(IDB_STORE).get(IDB_KEY);
-    return await new Promise((res,rej)=>{req.onsuccess=()=>{db.close();res(req.result||null);};req.onerror=()=>{db.close();rej();};});}
-  catch(e){return null;}
+function showApp(){
+  document.getElementById('loginOverlay').style.display='none';
+  const ub=document.getElementById('userBadge');
+  ub.style.display='flex';
+  document.getElementById('userEmail').textContent=currentUser.email||'';
+  // カレンダー設定をSupabaseから読み込む
+  loadCalSettingsFromSupabase();
 }
-async function clearHandleFromDB(){
-  try{const db=await openHandleDB();const tx=db.transaction(IDB_STORE,'readwrite');
-    tx.objectStore(IDB_STORE).delete(IDB_KEY);db.close();}catch(e){}
+async function signInWithPassword(){
+  const email=document.getElementById('loginEmail').value.trim();
+  const pw=document.getElementById('loginPw').value;
+  const msg=document.getElementById('loginMsg');
+  const btn=document.getElementById('loginBtn');
+  if(!email||!pw){msg.textContent='メールとパスワードを入力してください';msg.className='login-msg err';return;}
+  btn.disabled=true;btn.textContent='ログイン中…';
+  const {error}=await sb.auth.signInWithPassword({email,password:pw});
+  btn.disabled=false;btn.textContent='ログイン';
+  if(error){msg.textContent='エラー: '+error.message;msg.className='login-msg err';}
+}
+async function signUpWithPassword(){
+  const email=document.getElementById('loginEmail').value.trim();
+  const pw=document.getElementById('loginPw').value;
+  const msg=document.getElementById('loginMsg');
+  if(!email||!pw){msg.textContent='メールとパスワードを入力してください';msg.className='login-msg err';return;}
+  if(pw.length<6){msg.textContent='パスワードは6文字以上で入力してください';msg.className='login-msg err';return;}
+  msg.textContent='登録中…';msg.className='login-msg';
+  const {error}=await sb.auth.signUp({email,password:pw});
+  if(error){msg.textContent='エラー: '+error.message;msg.className='login-msg err';}
+  else{msg.textContent='✓ 登録しました。そのままログインされます。';msg.className='login-msg ok';}
+}
+async function signOut(){
+  // セッションキャッシュを削除してリロード（最も確実な方法）
+  Object.keys(localStorage).forEach(k=>{
+    if(k.startsWith('sb-'))localStorage.removeItem(k);
+  });
+  try{await sb.auth.signOut();}catch(e){}
+  location.reload();
 }
 
-// 起動時に前回のファイルハンドルを復元
-async function tryReconnectFile(){
-  if(!fileSyncSupported)return;
-  const handle=await loadHandleFromDB();
-  if(!handle)return;
-  const perm=await handle.queryPermission({mode:'readwrite'});
-  if(perm==='granted'){
-    syncFileHandle=handle;
-    await loadFromSyncFile();
-    updateFileSyncStatus('loaded');
-  } else if(perm==='prompt'){
-    syncFileHandle=handle;
-    updateFileSyncStatus('needs_permission');
-    showReconnectBanner(handle.name);
+async function loadFromSupabase(force=false){
+  if(!currentUser)return;
+
+  // ① localStorageを即表示（画面が空にならないように）
+  loadLocal();
+  renderSidebar();renderFeed();
+  setSyncDot('syncing');
+
+  // ② Supabaseから読み込む
+  const {data,error}=await sb.from('thinkdata')
+    .select('data_key,data_value').eq('user_id',currentUser.id);
+
+  if(error){
+    console.error('Supabase load error:',error);
+    setSyncDot('');
+    return;
+  }
+
+  const map={};(data||[]).forEach(r=>{map[r.data_key]=r.data_value;});
+
+  if(map.posts||map.notes){
+    const sbPosts=map.posts||[];
+    const sbNotes=map.notes||[];
+    const sbOutlines=map.outlines||[];
+    // 保存失敗中はローカルデータを守る（上書きしない）
+    if(!lastSaveOk&&!force){
+      console.warn('Last save failed - keeping local data');
+      setSyncDot('');
+      return;
+    }
+    // 強制同期か、Supabaseの方がデータが多い場合のみ上書き
+    if(force||sbPosts.length>=posts.length){
+      posts=sbPosts;
+      notes=sbNotes;
+      outlines=sbOutlines;
+    }
+  } else if(posts.length>0){
+    // Supabaseが空 → localStorageをアップロード
+    await saveToSupabase();
+    setSyncDot('saved');
+    return;
+  }
+
+  // migrate
+  notes.forEach(n=>{
+    if(!n.items)n.items=[];if(!n.stickies)n.stickies=[];
+    if(!n.paragraphs)n.paragraphs=n.body?n.body.split('\n').filter(l=>l.trim()):[];
+  });
+  posts.forEach(p=>{if(!p.replies)p.replies=[];});
+
+  localStorage.setItem(KP,JSON.stringify(posts));
+  localStorage.setItem(KN,JSON.stringify(notes));
+  localStorage.setItem(KO,JSON.stringify(outlines));
+
+  setSyncDot('saved');
+  renderSidebar();renderFeed();
+}
+
+async function showDiag(){
+  let panel=document.getElementById('diagPanel');
+  if(!panel){
+    panel=document.createElement('div');
+    panel.id='diagPanel';
+    panel.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9999;background:#fff;border:2px solid #7a5c1e;border-radius:12px;padding:20px;width:90vw;max-width:400px;font-family:monospace;font-size:13px;max-height:80vh;overflow-y:auto;';
+    document.body.appendChild(panel);
+  }
+  panel.innerHTML='<div style="font-weight:bold;margin-bottom:8px;">🔍 診断中…</div>';
+  const lines=[];
+  try{
+    const stored=getStoredSession();
+    lines.push('ローカルセッション: '+(stored?'✅ あり':'❌ なし'));
+    lines.push('currentUser: '+(currentUser?currentUser.email:'null'));
+    lines.push('ローカル投稿数: '+posts.length);
+    if(currentUser){
+      const {data,error}=await sb.from('thinkdata')
+        .select('data_key,data_value').eq('user_id',currentUser.id);
+      if(error){lines.push('読込エラー: '+error.message);}
+      else{
+        const map={};(data||[]).forEach(r=>{map[r.data_key]=r.data_value;});
+        lines.push('Supabase投稿数: '+(map.posts?.length??'なし'));
+        lines.push('Supabaseノート数: '+(map.notes?.length??'なし'));
+      }
+      const {error:we}=await sb.from('thinkdata').upsert(
+        {user_id:currentUser.id,data_key:'_test',data_value:{t:Date.now()},updated_at:new Date().toISOString()},
+        {onConflict:'user_id,data_key'}
+      );
+      lines.push('書込テスト: '+(we?'❌ '+we.message:'✅ 成功'));
+    }
+  }catch(e){lines.push('例外: '+e.message);}
+  panel.innerHTML=lines.map(l=>`<div style="padding:3px 0;border-bottom:1px solid #eee;">${l}</div>`).join('')
+    +'<button onclick="document.getElementById(\'diagPanel\').remove()" style="margin-top:12px;padding:6px 20px;background:#7a5c1e;color:#fff;border:none;border-radius:20px;cursor:pointer;">閉じる</button>';
+}
+
+async function forceSyncFromSupabase(){
+  const btn=document.getElementById('syncBtn');
+  if(btn){btn.textContent='🔄 同期中…';btn.disabled=true;}
+  await saveToSupabase();       // まず今のデータを保存
+  await loadFromSupabase(true); // 強制的にSupabaseで上書き
+  if(btn){btn.textContent='🔄 同期';btn.disabled=false;}
+}
+
+let lastSaveOk=true; // 最後の保存が成功したか
+
+async function saveToSupabase(){
+  if(!currentUser)return;
+  setSyncDot('syncing');
+  const uid=currentUser.id;
+  const ts=new Date().toISOString();
+  try{
+    for(const [key,val] of [['posts',posts],['notes',notes],['outlines',outlines]]){
+      const {error}=await sb.from('thinkdata').upsert(
+        {user_id:uid,data_key:key,data_value:val,updated_at:ts},
+        {onConflict:'user_id,data_key'}
+      );
+      if(error)throw error;
+    }
+    lastSaveOk=true;
+    setSyncDot('saved');
+  }catch(e){
+    lastSaveOk=false;
+    console.error('saveToSupabase error:',e);
+    // 保存失敗を赤で表示
+    const dot=document.getElementById('syncDot');
+    if(dot){dot.style.background='var(--red)';dot.title='保存失敗（ローカルには保存済み）: '+e.message;}
+    // 再認証して再試行
+    try{
+      const {data:rd}=await sb.auth.refreshSession();
+      if(rd?.session){
+        currentUser=rd.session.user;
+        // 再試行
+        for(const [key,val] of [['posts',posts],['notes',notes],['outlines',outlines]]){
+          await sb.from('thinkdata').upsert(
+            {user_id:currentUser.id,data_key:key,data_value:val,updated_at:ts},
+            {onConflict:'user_id,data_key'}
+          );
+        }
+        lastSaveOk=true;
+        setSyncDot('saved');
+      }
+    }catch(e2){console.error('retry save failed:',e2);}
+  }
+}
+
+function setSyncDot(state){
+  const dot=document.getElementById('syncDot');
+  if(!dot)return;
+  dot.className='sync-dot'+(state?' '+state:'');
+  dot.title=state==='syncing'?'同期中…':state==='saved'?'保存済み':'';
+  if(state==='saved')setTimeout(()=>{if(dot.classList.contains('saved'))dot.className='sync-dot';},2000);
+}
+
+// getSession にタイムアウトを付けるラッパー
+async function getSessionWithTimeout(ms=5000){
+  return Promise.race([
+    sb.auth.getSession(),
+    new Promise((_,reject)=>setTimeout(()=>reject(new Error('getSession timeout')),ms))
+  ]);
+}
+const BSKY_KEY_HANDLE='bsky_handle';
+const BSKY_KEY_PW='bsky_app_pw';
+const BSKY_KEY_DID='bsky_did';
+const BSKY_KEY_TOKEN='bsky_token';
+let bskySession=null; // {did, accessJwt, handle}
+
+function bskyIsConnected(){return!!(localStorage.getItem(BSKY_KEY_TOKEN)&&localStorage.getItem(BSKY_KEY_DID));}
+
+async function initBsky(){
+  const handle=localStorage.getItem(BSKY_KEY_HANDLE);
+  const pw=localStorage.getItem(BSKY_KEY_PW);
+  if(!handle||!pw)return;
+  // 毎回アプリ起動時にトークンを取り直す（期限切れを防ぐ）
+  const ok=await bskyRefreshSession();
+  if(ok){
+    updateBskyUI(true);
   } else {
-    await clearHandleFromDB();
+    // 接続情報は残すがUIは未接続に
+    updateBskyUI(false);
   }
 }
 
-function showReconnectBanner(fname){
-  let b=document.getElementById('reconnectBanner');
-  if(!b){
-    b=document.createElement('div');b.id='reconnectBanner';
-    b.style.cssText="position:fixed;top:0;left:0;right:0;z-index:9999;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;gap:12px;padding:9px 16px;font-family:'Hiragino Kaku Gothic ProN',sans-serif;font-size:13px;";
-    document.body.prepend(b);
+function updateBskyUI(connected){
+  const wrap=document.getElementById('bskyCheckWrap');
+  const btn=document.getElementById('bskySettingsBtn');
+  const mobileBar=document.getElementById('mobileBskyBar');
+  const mobileBtn=document.getElementById('mobileBskyBtn');
+  if(wrap){wrap.style.display=connected?'flex':'none';wrap.className='bsky-check-wrap'+(connected?' connected':'');}
+  if(btn){btn.textContent=connected?'🦋 Bsky接続中':'🦋 Bsky設定';btn.style.borderColor=connected?'var(--teal)':'var(--border2)';btn.style.color=connected?'var(--teal)':'var(--text3)';}
+  if(mobileBtn){
+    mobileBtn.textContent=connected?'🦋 Bsky接続中':'🦋 Bsky設定';
+    mobileBtn.style.borderColor=connected?'var(--teal)':'var(--border2)';
+    mobileBtn.style.color=connected?'var(--teal)':'var(--text2)';
   }
-  b.innerHTML=`<span>📂 前回のファイル「${fname}」に再接続しますか？</span>
-    <button onclick="reconnectFile()" style="padding:4px 14px;background:#fff;color:var(--accent);border:none;border-radius:20px;font-weight:700;cursor:pointer;font-size:12px;">接続する</button>
-    <button onclick="dismissReconnectBanner()" style="padding:4px 10px;background:none;border:1px solid rgba(255,255,255,.5);color:#fff;border-radius:20px;cursor:pointer;font-size:12px;">後で</button>`;
-}
-async function reconnectFile(){
-  const b=document.getElementById('reconnectBanner');if(b)b.style.display='none';
-  if(!syncFileHandle)return;
-  const perm=await syncFileHandle.requestPermission({mode:'readwrite'});
-  if(perm==='granted'){await loadFromSyncFile();updateFileSyncStatus('loaded');}
-}
-function dismissReconnectBanner(){
-  const b=document.getElementById('reconnectBanner');if(b)b.style.display='none';
 }
 
-async function pickSyncFile(){
-  if(!fileSyncSupported){
-    alert('このブラウザはFile System Access APIに対応していません。\nChromeをお使いください。\nSafari/iOSでは「書き出し/読み込み」をお使いください。');return;
-  }
+function openBskySettings(){
+  document.getElementById('bskyHandle').value=localStorage.getItem(BSKY_KEY_HANDLE)||'';
+  document.getElementById('bskyAppPw').value=localStorage.getItem(BSKY_KEY_PW)||'';
+  document.getElementById('bskyModalStatus').textContent='';
+  document.getElementById('bskyModal').classList.add('open');
+}
+function closeBskySettings(){document.getElementById('bskyModal').classList.remove('open');}
+function clearBskySettings(){
+  [BSKY_KEY_HANDLE,BSKY_KEY_PW,BSKY_KEY_DID,BSKY_KEY_TOKEN].forEach(k=>localStorage.removeItem(k));
+  bskySession=null;updateBskyUI(false);closeBskySettings();
+}
+
+async function saveBskySettings(){
+  const handle=document.getElementById('bskyHandle').value.trim().replace(/^@/,'');
+  const pw=document.getElementById('bskyAppPw').value.trim();
+  const status=document.getElementById('bskyModalStatus');
+  if(!handle||!pw){status.textContent='ハンドルとパスワードを入力してください';status.className='bsky-status err';return;}
+  status.textContent='接続テスト中…';status.className='bsky-status';
   try{
-    [syncFileHandle]=await window.showOpenFilePicker({
-      types:[{description:'ThinkNotes Data',accept:{'application/json':['.json']}}],multiple:false
+    const res=await fetch('https://bsky.social/xrpc/com.atproto.server.createSession',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({identifier:handle,password:pw})
     });
-    await saveHandleToDB(syncFileHandle);
-    localStorage.setItem('tn_sync_filename',syncFileHandle.name);
-    const b=document.getElementById('reconnectBanner');if(b)b.style.display='none';
-    await loadFromSyncFile();
-    updateFileSyncStatus('connected');
-  }catch(e){if(e.name!=='AbortError')console.error('File pick error:',e);}
-}
-async function loadFromSyncFile(){
-  if(!syncFileHandle)return;
-  try{
-    const file=await syncFileHandle.getFile();
-    const text=await file.text();
-    const data=JSON.parse(text);
-    if(data.posts){posts=data.posts;localStorage.setItem('tn_posts_v20',JSON.stringify(posts));}
-    if(data.notes){notes=data.notes;localStorage.setItem('tn_notes_v20',JSON.stringify(notes));}
-    if(data.outlines){outlines=data.outlines;localStorage.setItem('tn_outlines_v20',JSON.stringify(outlines));}
-    if(data.calSettings){localStorage.setItem('tn_cal_settings',JSON.stringify(data.calSettings));}
-    renderFeed();renderSidebar();wfRenderSidebar();renderNotesList();renderCardView();
-    loadCalSettings();
-    updateFileSyncStatus('loaded');
-    showToast('📂 ファイルから読み込みました');
-  }catch(e){
-    console.error('Load from file error:',e);
-    updateFileSyncStatus('error');
-  }
+    const data=await res.json();
+    if(!res.ok){status.textContent='エラー: '+(data.message||res.status);status.className='bsky-status err';return;}
+    // 保存
+    localStorage.setItem(BSKY_KEY_HANDLE,handle);
+    localStorage.setItem(BSKY_KEY_PW,pw);
+    localStorage.setItem(BSKY_KEY_DID,data.did);
+    localStorage.setItem(BSKY_KEY_TOKEN,data.accessJwt);
+    bskySession={accessJwt:data.accessJwt,did:data.did,handle};
+    status.textContent=`✓ @${handle} として接続しました`;status.className='bsky-status ok';
+    updateBskyUI(true);
+    setTimeout(closeBskySettings,1200);
+  }catch(e){status.textContent='通信エラー: '+e.message;status.className='bsky-status err';}
 }
 
-async function saveToSyncFile(){
-  if(!syncFileHandle)return;
+async function bskyRefreshSession(){
+  // アプリパスワードで再認証
+  const handle=localStorage.getItem(BSKY_KEY_HANDLE);
+  const pw=localStorage.getItem(BSKY_KEY_PW);
+  if(!handle||!pw)return false;
   try{
-    const writable=await syncFileHandle.createWritable();
-    const data={
-      version:21,savedAt:new Date().toISOString(),
-      posts,notes,outlines,
-      calSettings:JSON.parse(localStorage.getItem('tn_cal_settings')||'{}')
-    };
-    await writable.write(JSON.stringify(data));
-    await writable.close();
-    updateFileSyncStatus('saved');
-  }catch(e){
-    if(e.name==='NoModificationAllowedError'){
-      // ファイルが外部で変更された可能性
-      updateFileSyncStatus('conflict');
-    } else {
-      console.error('Save to file error:',e);
+    const res=await fetch('https://bsky.social/xrpc/com.atproto.server.createSession',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({identifier:handle,password:pw})
+    });
+    if(!res.ok)return false;
+    const data=await res.json();
+    localStorage.setItem(BSKY_KEY_TOKEN,data.accessJwt);
+    localStorage.setItem(BSKY_KEY_DID,data.did);
+    bskySession={accessJwt:data.accessJwt,did:data.did,handle};
+    return true;
+  }catch(e){return false;}
+}
+
+async function postToBsky(text, replyRef=null, imageUrls=[]){
+  if(!bskySession)return{ok:false,error:'未接続'};
+  const bskyText=text.length>300?text.slice(0,297)+'…':text;
+  // ハッシュタグfacet
+  const facets=[];
+  const tagRe=/#([^\s#、。！？,.!?]+)/g;
+  let m;const enc=new TextEncoder();
+  while((m=tagRe.exec(bskyText))!==null){
+    const start=enc.encode(bskyText.slice(0,m.index)).length;
+    const end=enc.encode(bskyText.slice(0,m.index+m[0].length)).length;
+    facets.push({index:{byteStart:start,byteEnd:end},features:[{'$type':'app.bsky.richtext.facet#tag',tag:m[1]}]});
+  }
+  const record={$type:'app.bsky.feed.post',text:bskyText,createdAt:new Date().toISOString()};
+  if(facets.length)record.facets=facets;
+  if(replyRef){
+    const root=replyRef.root||replyRef;
+    const parent=replyRef.parent||replyRef;
+    record.reply={root,parent};
+  }
+
+  // 画像をBskyにアップロードしてembedに追加
+  if(imageUrls&&imageUrls.length>0){
+    const blobs=[];
+    for(const url of imageUrls.slice(0,4)){ // Bskyは最大4枚
+      try{
+        const imgRes=await fetch(url);
+        const blob=await imgRes.blob();
+        const uploadRes=await fetch('https://bsky.social/xrpc/com.atproto.repo.uploadBlob',{
+          method:'POST',
+          headers:{'Content-Type':blob.type,'Authorization':'Bearer '+bskySession.accessJwt},
+          body:blob
+        });
+        if(uploadRes.ok){
+          const d=await uploadRes.json();
+          blobs.push({image:d.blob,alt:''});
+        }
+      }catch(e){console.warn('blob upload error:',e);}
+    }
+    if(blobs.length>0){
+      record.embed={'$type':'app.bsky.embed.images',images:blobs};
+    }
+  }
+
+  const tryPost=async(token)=>{
+    return fetch('https://bsky.social/xrpc/com.atproto.repo.createRecord',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body:JSON.stringify({repo:bskySession.did,collection:'app.bsky.feed.post',record})
+    });
+  };
+
+  let res=await tryPost(bskySession.accessJwt);
+  if(res.status===401){
+    const ok=await bskyRefreshSession();
+    if(!ok)return{ok:false,error:'再認証失敗'};
+    res=await tryPost(bskySession.accessJwt);
+  }
+  if(res.ok){
+    const d=await res.json();
+    return{ok:true,uri:d.uri,cid:d.cid};
+  }
+  const err=await res.json().catch(()=>({message:res.status}));
+  return{ok:false,error:err.message||res.status};
+}
+// ─── アウトライン画像 ────────────────────────────────────
+function wfRenderImgStrip(){
+  const ol=wfGetOl();
+  const strip=document.getElementById('wfImgStrip');if(!strip)return;
+  const imgs=ol?.images||[];
+  if(!imgs.length){strip.style.display='none';return;}
+  strip.style.display='flex';
+  strip.innerHTML=imgs.map((src,i)=>`
+    <div style="position:relative;display:inline-block;">
+      <img src="${src}" onclick="openLightbox('${src}')" style="width:80px;height:60px;object-fit:cover;border-radius:6px;cursor:pointer;border:0.5px solid var(--border);" loading="lazy">
+      <button onclick="wfRemoveImg(${i})" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,.55);color:#fff;border:none;border-radius:50%;width:16px;height:16px;cursor:pointer;font-size:9px;display:flex;align-items:center;justify-content:center;padding:0;">✕</button>
+    </div>`).join('');
+}
+
+async function onWfImageSelected(e){
+  const files=[...e.target.files];e.target.value='';
+  const ol=wfGetOl();if(!ol)return;
+  if(!ol.images)ol.images=[];
+  for(const file of files){
+    const dataUrl=await resizeImage(file,1200,0.85);
+    ol.images.push(dataUrl);
+  }
+  ol.updatedAt=Date.now();save();wfRenderImgStrip();
+  if(currentUser){
+    const localImgs=ol.images.filter(u=>u.startsWith('data:')).map(u=>({dataUrl:u}));
+    if(localImgs.length){
+      const urls=await uploadImagesToStorage(localImgs);
+      ol.images=ol.images.filter(u=>!u.startsWith('data:')).concat(urls);
+      ol.updatedAt=Date.now();save();wfRenderImgStrip();
     }
   }
 }
 
-function updateFileSyncStatus(state){
-  const el=document.getElementById('fileSyncStatus');
-  const dot=document.getElementById('syncDot');
-  if(!el)return;
-  const fname=syncFileHandle?.name||localStorage.getItem('tn_sync_filename')||'';
-  const states={
-    connected:{text:`📂 ${fname}`,color:'var(--teal)',dot:'var(--teal)'},
-    loaded:{text:`✓ 読込 ${fname}`,color:'var(--teal)',dot:'var(--teal)'},
-    saved:{text:`✓ ${fname}`,color:'var(--text3)',dot:'var(--teal)'},
-    needs_permission:{text:`📂 ${fname}（許可待ち）`,color:'var(--accent)',dot:'var(--accent)'},
-    error:{text:`⚠ エラー`,color:'var(--red)',dot:'var(--red)'},
-    conflict:{text:`⚠ 競合`,color:'var(--red)',dot:'var(--red)'},
-    none:{text:'',color:'var(--text3)',dot:'var(--border2)'},
+function wfRemoveImg(idx){
+  const ol=wfGetOl();if(!ol||!ol.images)return;
+  ol.images.splice(idx,1);ol.updatedAt=Date.now();save();wfRenderImgStrip();
+}
+
+// ─── 画像ライブラリ ──────────────────────────────────────
+let imgLibraryTarget='outline'; // 'outline' | 'card'
+
+function openImgLibrary(target){
+  imgLibraryTarget=target;
+  // すべての投稿の画像を収集（重複除去）
+  const seen=new Set();
+  const all=[];
+  posts.forEach(p=>{
+    (p.images||[]).forEach(src=>{if(!seen.has(src)){seen.add(src);all.push({src,from:cleanText(p.content).slice(0,30)});}});
+    (p.replies||[]).forEach(r=>(r.images||[]).forEach(src=>{if(!seen.has(src)){seen.add(src);all.push({src,from:cleanText(r.content).slice(0,30)});}}));
+  });
+  // カード・アウトラインの画像も追加
+  outlines.forEach(ol=>(ol.images||[]).forEach(src=>{if(!seen.has(src)){seen.add(src);all.push({src,from:ol.title?.slice(0,30)||'アウトライン'});}}));
+
+  const modal=document.getElementById('imgLibraryModal');
+  const grid=document.getElementById('imgLibraryGrid');
+  const empty=document.getElementById('imgLibraryEmpty');
+  if(!all.length){grid.innerHTML='';if(empty)empty.style.display='block';}
+  else{
+    if(empty)empty.style.display='none';
+    grid.innerHTML=all.map(({src,from})=>`
+      <div onclick="selectLibraryImg('${src}')" style="cursor:pointer;border-radius:8px;overflow:hidden;border:0.5px solid var(--border);background:var(--bg3);transition:all .12s;" onmouseover="this.style.borderColor='var(--accent-m)'" onmouseout="this.style.borderColor='var(--border)'">
+        <img src="${src}" style="width:100%;height:100px;object-fit:cover;display:block;" loading="lazy">
+        <div style="padding:4px 6px;font-family:'Hiragino Kaku Gothic ProN',sans-serif;font-size:10px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(from)}</div>
+      </div>`).join('');
+  }
+  modal.style.display='flex';
+}
+
+function closeImgLibrary(){
+  document.getElementById('imgLibraryModal').style.display='none';
+}
+
+function selectLibraryImg(src){
+  closeImgLibrary();
+  if(imgLibraryTarget==='outline'){
+    const ol=wfGetOl();if(!ol)return;
+    if(!ol.images)ol.images=[];
+    if(!ol.images.includes(src))ol.images.push(src);
+    ol.updatedAt=Date.now();save();wfRenderImgStrip();
+  } else if(imgLibraryTarget==='card'){
+    const ol=outlines.find(x=>x.id===currentCardOutlineId);if(!ol)return;
+    if(!ol.images)ol.images=[];
+    if(!ol.images.includes(src))ol.images.push(src);
+    ol.updatedAt=Date.now();save();
+    openCardDetail(currentCardOutlineId);
+  }
+}
+
+
+// ─── 画像ピッカー ────────────────────────────────────────
+let imgPickerTarget=null;
+
+function openImgPickerFor(target){
+  imgPickerTarget=target;
+  const modal=document.getElementById('imgPickerModal');
+  if(modal){modal.style.display='flex';renderImgPickerGrid();}
+}
+function closeImgPicker(){
+  const modal=document.getElementById('imgPickerModal');
+  if(modal)modal.style.display='none';
+}
+function collectAllImages(){
+  const imgs=[];const seen=new Set();
+  posts.forEach(p=>{
+    (p.images||[]).forEach(url=>{if(!seen.has(url)&&!url.startsWith('data:')){seen.add(url);imgs.push({url,source:'ログ',title:cleanText(p.content).slice(0,30)});}});
+    (p.replies||[]).forEach(r=>(r.images||[]).forEach(url=>{if(!seen.has(url)&&!url.startsWith('data:')){seen.add(url);imgs.push({url,source:'返信',title:cleanText(r.content).slice(0,30)});}}));
+  });
+  outlines.forEach(ol=>{
+    (ol.images||[]).forEach(url=>{if(!seen.has(url)&&!url.startsWith('data:')){seen.add(url);imgs.push({url,source:'カード',title:ol.title||'無題'});}});
+  });
+  return imgs;
+}
+function renderImgPickerGrid(){
+  const grid=document.getElementById('imgPickerGrid');if(!grid)return;
+  const imgs=collectAllImages();
+  if(!imgs.length){grid.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:2rem;font-family:'Hiragino Kaku Gothic ProN',sans-serif;font-size:13px;color:var(--text3);">まだ画像がありません。新規アップロードしてください。</div>`;return;}
+  grid.innerHTML=imgs.map(({url,source,title})=>`
+    <div onclick="selectImgFromPicker('${url}')" style="cursor:pointer;border-radius:8px;overflow:hidden;border:0.5px solid var(--border);background:var(--bg3);transition:border-color .12s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+      <img src="${url}" style="width:100%;height:100px;object-fit:cover;" loading="lazy">
+      <div style="padding:5px 7px;">
+        <div style="font-family:'Hiragino Kaku Gothic ProN',sans-serif;font-size:10px;color:var(--text3);">${esc(source)}</div>
+        <div style="font-family:'Hiragino Kaku Gothic ProN',sans-serif;font-size:11px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(title)}</div>
+      </div>
+    </div>`).join('');
+}
+async function selectImgFromPicker(url){
+  closeImgPicker();
+  if(imgPickerTarget==='outline'){
+    const ol=wfGetOl();if(!ol)return;
+    if(!ol.images)ol.images=[];
+    if(!ol.images.includes(url))ol.images.push(url);
+    ol.updatedAt=Date.now();save();wfRenderImgStrip();
+  } else if(imgPickerTarget==='card'){
+    const ol=outlines.find(x=>x.id===currentCardOutlineId);if(!ol)return;
+    if(!ol.images)ol.images=[];
+    if(!ol.images.includes(url))ol.images.push(url);
+    ol.updatedAt=Date.now();save();openCardDetail(currentCardOutlineId);renderCardGrid();
+  }
+}
+async function onImgPickerFileSelected(e){
+  const files=[...e.target.files];e.target.value='';
+  const localImgs=[];
+  for(const file of files){const dataUrl=await resizeImage(file,1200,0.85);localImgs.push({dataUrl});}
+  let urls=currentUser?await uploadImagesToStorage(localImgs):localImgs.map(i=>i.dataUrl);
+  closeImgPicker();
+  if(imgPickerTarget==='outline'){
+    const ol=wfGetOl();if(!ol)return;
+    if(!ol.images)ol.images=[];ol.images.push(...urls);ol.updatedAt=Date.now();save();wfRenderImgStrip();
+  } else if(imgPickerTarget==='card'){
+    const ol=outlines.find(x=>x.id===currentCardOutlineId);if(!ol)return;
+    if(!ol.images)ol.images=[];ol.images.push(...urls);ol.updatedAt=Date.now();save();openCardDetail(currentCardOutlineId);renderCardGrid();
+  }
+}
+function wfRenderImgStrip(){
+  const ol=wfGetOl();
+  const strip=document.getElementById('wfImgStrip');if(!strip)return;
+  const imgs=ol?.images||[];
+  strip.style.display=imgs.length?'flex':'none';
+  strip.innerHTML=imgs.map((src,i)=>`
+    <div style="position:relative;display:inline-block;">
+      <img src="${src}" onclick="openLightbox('${src}')" style="height:64px;width:auto;max-width:120px;object-fit:cover;border-radius:6px;cursor:pointer;border:0.5px solid var(--border);" loading="lazy">
+      <button onclick="wfRemoveImg(${i})" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,.55);color:#fff;border:none;border-radius:50%;width:16px;height:16px;cursor:pointer;font-size:9px;line-height:1;padding:0;">✕</button>
+    </div>`).join('');
+}
+function wfRemoveImg(idx){
+  const ol=wfGetOl();if(!ol||!ol.images)return;
+  ol.images.splice(idx,1);ol.updatedAt=Date.now();save();wfRenderImgStrip();
+}
+
+// ─── ノート用カードピッカー ───────────────────────────────
+const notePickerSel=new Set();
+
+function openNoteCardPicker(){
+  notePickerSel.clear();
+  renderNoteCardPicker();
+  document.getElementById('noteCardPickerSearch').value='';
+  document.getElementById('noteCardPickerModal').style.display='flex';
+}
+function closeNoteCardPicker(){
+  document.getElementById('noteCardPickerModal').style.display='none';
+}
+function renderNoteCardPicker(){
+  const q=(document.getElementById('noteCardPickerSearch')?.value||'').toLowerCase();
+  const pool=[...outlines].sort((a,b)=>b.updatedAt-a.updatedAt)
+    .filter(ol=>!q||(ol.title||'').toLowerCase().includes(q));
+  const grid=document.getElementById('noteCardPickerGrid');if(!grid)return;
+  const count=document.getElementById('noteCardPickerCount');
+  if(count)count.textContent=notePickerSel.size?`${notePickerSel.size}件選択中`:'';
+  grid.innerHTML=pool.map(ol=>{
+    const sel=notePickerSel.has(ol.id);
+    const selIdx=sel?[...notePickerSel].indexOf(ol.id)+1:0;
+    return`<div onclick="notePickerToggle('${ol.id}')"
+      style="background:${sel?'var(--accent-l)':'var(--bg3)'};border:${sel?'1.5px solid var(--accent)':'0.5px solid var(--border)'};border-radius:8px;padding:10px;cursor:pointer;position:relative;min-height:80px;display:flex;flex-direction:column;gap:4px;transition:all .12s;">
+      ${sel?`<div style="position:absolute;top:6px;right:6px;width:20px;height:20px;border-radius:50%;background:var(--accent);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;">${selIdx}</div>`:''}
+      <div style="font-family:'Hiragino Kaku Gothic ProN',sans-serif;font-size:12px;font-weight:700;color:var(--text);padding-right:${sel?'22px':'0'};">${esc(ol.title||'無題')}</div>
+      <div style="font-family:'Hiragino Kaku Gothic ProN',sans-serif;font-size:10px;color:var(--text3);">${ol.items.length}項目 · ${fmtDate(ol.updatedAt)}</div>
+      ${(ol.labels||[]).map(l=>`<span style="display:inline-block;font-family:'Hiragino Kaku Gothic ProN',sans-serif;font-size:9px;padding:1px 6px;border-radius:20px;background:var(--accent);color:#fff;">${esc(l)}</span>`).join('')}
+    </div>`;
+  }).join('');
+}
+function notePickerToggle(id){
+  if(notePickerSel.has(id))notePickerSel.delete(id);
+  else notePickerSel.add(id);
+  renderNoteCardPicker();
+}
+function confirmNoteCardPicker(){
+  if(!notePickerSel.size)return;
+  closeNoteCardPicker();
+  const ordered=[...notePickerSel].map(id=>outlines.find(x=>x.id===id)).filter(Boolean);
+  let n=notes.find(x=>x.id===currentNoteId);
+  if(!n){
+    n={id:uid(),title:'',body:'',paragraphs:[],items:[],stickies:[],createdAt:Date.now(),updatedAt:Date.now()};
+    notes.push(n);currentNoteId=n.id;
+  }
+  // 新規カードのテキストを生成
+  const newText=ordered.map(ol=>{
+    const title=ol.title||'無題';
+    const items=ol.items||[];
+    const body=items.map(it=>{
+      let t=it.text||'';
+      if(!t&&it.id&&!it.id.startsWith('reply:')){const p=posts.find(x=>x.id===it.id);t=p?cleanText(p.content):'';}
+      return t.trim();
+    }).filter(Boolean).join('\n');
+    return title+'\n\n'+body;
+  }).join('\n\n');
+  // 既存テキストに追加
+  const existing=(n.mergedText||'').trim();
+  n.mergedText=existing?existing+'\n\n'+newText:newText;
+  if(!n.cardBlocks)n.cardBlocks=[];
+  n.cardBlocks.push(...ordered.map(ol=>({outlineId:ol.id,stickies:[]})));
+  if(!n.title)n.title=ordered[0]?.title||'無題のノート';
+  n.updatedAt=Date.now();
+  notePickerSel.clear();
+  save();openNote(currentNoteId);renderNotesList();
+}
+
+
+const selectedCardIds=new Set();
+
+function cardToggleSel(id,e){
+  e.stopPropagation();
+  if(selectedCardIds.has(id))selectedCardIds.delete(id);
+  else selectedCardIds.add(id);
+  updateCardSelBar();
+  // セルのselectedクラスを更新
+  document.querySelectorAll('.card-cell').forEach(el=>{
+    if(el.dataset.id)el.classList.toggle('selected',selectedCardIds.has(el.dataset.id));
+  });
+}
+
+function updateCardSelBar(){
+  const bar=document.getElementById('cardSelBar');
+  const lbl=document.getElementById('cardSelLabel');
+  if(selectedCardIds.size>0){
+    bar.style.display='flex';
+    lbl.textContent=`${selectedCardIds.size}件選択中`;
+  } else {
+    bar.style.display='none';
+  }
+}
+
+function cardSelClear(){
+  selectedCardIds.clear();updateCardSelBar();renderCardGrid();
+}
+
+function createNoteFromCards(){
+  if(!selectedCardIds.size)return;
+  // 選択順を維持（グリッド表示順）
+  const ordered=[...selectedCardIds].map(id=>outlines.find(x=>x.id===id)).filter(Boolean);
+  // 新規ノート作成
+  const n={
+    id:uid(),
+    title:ordered.map(ol=>ol.title||'無題').join('・').slice(0,40),
+    body:'',paragraphs:[],items:[],stickies:[],
+    cardBlocks:ordered.map(ol=>({outlineId:ol.id,stickies:[]})),
+    createdAt:Date.now(),updatedAt:Date.now()
   };
-  const s=states[state]||states.none;
-  el.textContent=s.text;el.style.color=s.color;
-  el.style.display=s.text?'':'none';
-  if(dot)dot.style.background=s.dot;
+  notes.push(n);
+  currentNoteId=n.id;
+  selectedCardIds.clear();updateCardSelBar();
+  save();switchMain('note');
+  setTimeout(()=>openNote(n.id),50);
 }
 
-function showToast(msg,duration=2500){
-  let t=document.getElementById('bskyToast');
-  if(!t){t=document.createElement('div');t.id='bskyToast';
-    t.style.cssText="position:fixed;bottom:20px;right:20px;z-index:9999;padding:10px 16px;border-radius:var(--r);font-family:'Hiragino Kaku Gothic ProN',sans-serif;font-size:13px;box-shadow:0 4px 16px rgba(0,0,0,.15);transition:opacity .3s;";
-    document.body.appendChild(t);}
-  t.textContent=msg;t.style.background='var(--teal)';t.style.color='#fff';t.style.opacity='1';
-  clearTimeout(t._t);t._t=setTimeout(()=>{t.style.opacity='0';},duration);
+
+let wfPickerTag=null;
+
+function wfTogglePicker(){
+  const picker=document.getElementById('wfPicker');
+  if(!picker)return;
+  const open=picker.style.display!=='none';
+  picker.style.display=open?'none':'flex';
+  if(!open){wfRenderPickerTags();wfRenderPicker();}
+  const btn=document.getElementById('wfPickerBtn');
+  if(btn)btn.textContent=open?'📥 つぶやきから追加':'✕ ピッカーを閉じる';
 }
 
-// セッションをlocalStorageから直接読む（getSession()のハング回避）
+function wfRenderPickerTags(){
+  const el=document.getElementById('wfPickerTags');if(!el)return;
+  const tags=allTagsMap();
+  el.innerHTML=`<span class="wf-picker-tag${!wfPickerTag?' active':''}" onclick="wfSetPickerTag(null)">すべて</span>`
+    +Object.entries(tags).sort((a,b)=>b[1]-a[1]).map(([t])=>`
+      <span class="wf-picker-tag${wfPickerTag===t?' active':''}" onclick="wfSetPickerTag('${esc(t)}')">#${esc(t)}</span>`).join('');
+}
+
+function wfSetPickerTag(tag){wfPickerTag=tag;wfRenderPickerTags();wfRenderPicker();}
+
+function wfRenderPicker(){
+  const feed=document.getElementById('wfPickerFeed');if(!feed)return;
+  const q=(document.getElementById('wfPickerSearch')?.value||'').toLowerCase();
+  let pool=[...posts].sort((a,b)=>b.updatedAt-a.updatedAt);
+  if(q)pool=pool.filter(p=>p.content.toLowerCase().includes(q));
+  if(wfPickerTag)pool=pool.filter(p=>extractTags(p.content).includes(wfPickerTag));
+  if(!pool.length){feed.innerHTML=`<div style="padding:1rem;font-family:'Hiragino Kaku Gothic ProN',sans-serif;font-size:12px;color:var(--text3);text-align:center;">投稿が見つかりません</div>`;return;}
+  feed.innerHTML=pool.map(p=>{
+    const text=cleanText(p.content);
+    const replies=p.replies||[];
+    const repliesHtml=replies.length?`<div class="wf-picker-replies">
+      ${replies.map((r,ri)=>`<div class="wf-picker-reply">
+        <span style="flex:1;">${esc(r.content.slice(0,60))}${r.content.length>60?'…':''}</span>
+        <button class="wf-picker-reply-add" data-pid="${p.id}" data-ri="${ri}" onclick="event.stopPropagation();wfInsertReply(this)">＋</button>
+      </div>`).join('')}
+    </div>`:'';
+    return`<div class="wf-picker-post">
+      <div class="wf-picker-post-text">${esc(text.slice(0,120))}${text.length>120?'…':''}</div>
+      ${repliesHtml}
+      <div class="wf-picker-post-meta">
+        <span class="wf-picker-post-time">${fmtDt(p.createdAt)}</span>
+        ${replies.length?`<span style="font-family:'Hiragino Kaku Gothic ProN',sans-serif;font-size:10px;color:var(--text3);">↩ ${replies.length}件</span>`:''}
+        <button class="wf-picker-add" onclick="wfInsertPost('${p.id}')">＋ 追加</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function wfInsertPost(pid){
+  const ol=wfGetOl();if(!ol)return;
+  const p=posts.find(x=>x.id===pid);if(!p)return;
+  const text=cleanText(p.content);
+  const lvl=ol.items[wfCurrentFocus]?.level||0;
+  ol.items.splice(wfCurrentFocus+1,0,{id:uid(),text,level:lvl});
+  ol.updatedAt=Date.now();save();wfRenderItems();wfFocusItem(wfCurrentFocus+1);
+}
+
+function wfInsertReply(btn){
+  const pid=btn.dataset.pid;
+  const ri=parseInt(btn.dataset.ri);
+  const p=posts.find(x=>x.id===pid);
+  if(!p||!p.replies||!p.replies[ri])return;
+  wfInsertText(p.replies[ri].content,1);
+}
+
+function wfInsertText(text,extraLevel=0){
+  const ol=wfGetOl();if(!ol)return;
+  const baseLvl=ol.items[wfCurrentFocus]?.level||0;
+  ol.items.splice(wfCurrentFocus+1,0,{id:uid(),text,level:Math.min(6,baseLvl+extraLevel)});
+  ol.updatedAt=Date.now();save();wfRenderItems();wfFocusItem(wfCurrentFocus+1);
+}
+
+// ─── Card View ───────────────────────────────────────────
+let currentCardOutlineId=null;
+
+let activeCardLabel=null;
+
+function renderCardLabelFilters(){
+  const el=document.getElementById('cardLabelFilters');if(!el)return;
+  const labelSet=new Set();
+  outlines.forEach(ol=>(ol.labels||[]).forEach(l=>labelSet.add(l)));
+  if(!labelSet.size){el.innerHTML='';return;}
+  el.innerHTML=`<span class="card-label-pill${!activeCardLabel?' active':''}" onclick="setCardLabel(null)">すべて</span>`
+    +[...labelSet].map(l=>`<span class="card-label-pill${activeCardLabel===l?' active':''}" onclick="setCardLabel('${esc(l)}')">${esc(l)}</span>`).join('');
+}
+
+function setCardLabel(label){
+  activeCardLabel=label;renderCardLabelFilters();renderCardGrid();
+}
+
+function renderCardView(){
+  closeCardDetail();
+  renderCardLabelFilters();
+  renderCardGrid();
+}
+
+function renderCardGrid(){
+  const q=(document.getElementById('cardGridSearch')?.value||'').toLowerCase();
+  let pool=[...outlines].sort((a,b)=>b.updatedAt-a.updatedAt)
+    .filter(ol=>!q||(ol.title||'').toLowerCase().includes(q))
+    .filter(ol=>!activeCardLabel||(ol.labels||[]).includes(activeCardLabel));
+  const grid=document.getElementById('cardGrid');
+  const empty=document.getElementById('cardGridEmpty');
+  const count=document.getElementById('cardGridCount');
+  if(!grid)return;
+  if(count)count.textContent=pool.length+'件';
+  if(!pool.length){grid.innerHTML='';if(empty)empty.style.display='flex';return;}
+  if(empty)empty.style.display='none';
+  grid.innerHTML=pool.map(ol=>{
+    const previewLines=ol.items.slice(0,8).map(it=>{
+      const lvl=it.level||0;
+      let text=it.text||'';
+      if(!it.text&&it.id&&!it.id.startsWith('reply:')){const p=posts.find(x=>x.id===it.id);text=p?cleanText(p.content):'';}
+      if(!text.trim())return'';
+      return`<div class="card-cell-line" style="padding-left:${lvl*8}px;">${esc(text.split('\n')[0].slice(0,60))}</div>`;
+    }).filter(Boolean).join('');
+    const labels=(ol.labels||[]).map(l=>`<span style="font-family:'Hiragino Kaku Gothic ProN',sans-serif;font-size:9px;padding:1px 7px;border-radius:20px;background:var(--accent);color:#fff;">${esc(l)}</span>`).join('');
+    // タイムラインのタグは表示しない（ラベルのみ）
+    const hasImg=ol.images?.length;
+    return`<div class="card-cell" onclick="openCardDetail('${ol.id}')">
+      <div class="card-cell-title">${esc(ol.title||'無題')}</div>
+      <div class="card-cell-body" style="flex:1;">${previewLines}</div>
+      ${hasImg?`<img src="${ol.images[0]}" style="width:100%;height:72px;object-fit:cover;border-radius:6px;flex-shrink:0;" loading="lazy">`:''}
+      ${labels?`<div style="display:flex;flex-wrap:wrap;gap:3px;flex-shrink:0;">${labels}</div>`:''}
+      <div class="card-cell-foot">${ol.items.length}項目 · ${fmtDate(ol.updatedAt)}</div>
+      <div class="card-cell-fade"></div>
+    </div>`;
+  }).join('');
+}
+
+function openCardDetail(outlineId){
+  currentCardOutlineId=outlineId;
+  const ol=outlines.find(x=>x.id===outlineId);if(!ol)return;
+  const detail=document.getElementById('cardDetail');
+  const body=document.getElementById('cardDetailBody');
+  if(!body){if(detail)detail.style.display='flex';return;}
+
+  const labels=ol.labels||[];
+  const images=ol.images||[];
+
+  // カードスタイルの詳細ビュー
+  const itemsHtml=ol.items.map((it,i)=>{
+    const lvl=it.level||0;
+    let text=it.text||'';
+    if(!it.text&&it.id&&!it.id.startsWith('reply:')){const p=posts.find(x=>x.id===it.id);text=p?cleanText(p.content):'';}
+    if(!text.trim())return'';
+    let postImgsHtml='';
+    if(it.id&&!it.id.startsWith('reply:')){
+      const p=posts.find(x=>x.id===it.id);
+      if(p?.images?.length)postImgsHtml=`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;">${p.images.map(src=>`<img src="${src}" onclick="openLightbox('${src}')" class="card-detail-card-image" loading="lazy">`).join('')}</div>`;
+    }
+    return`<div class="card-detail-item" style="padding-left:${lvl*24}px;">
+      <span class="card-detail-bullet">•</span>
+      <div><div class="card-detail-text">${linkify(text)}</div>${postImgsHtml}</div>
+    </div>`;
+  }).filter(Boolean).join('');
+
+  // カード自体の画像
+  const cardImgsHtml=images.length?`<div class="card-detail-card-images">${images.map((src,i)=>`
+    <div style="position:relative;display:inline-block;">
+      <img src="${src}" onclick="openLightbox('${src}')" class="card-detail-card-image" loading="lazy">
+      <button onclick="removeCardImage(${i})" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,.5);color:#fff;border:none;border-radius:50%;width:20px;height:20px;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;">✕</button>
+    </div>`).join('')}</div>`:'';
+
+  body.innerHTML=`<div class="card-detail-card">
+    <div class="card-detail-card-title">${esc(ol.title||'無題')}</div>
+    <div class="card-detail-card-meta">
+      <span style="font-family:'Hiragino Kaku Gothic ProN',sans-serif;font-size:11px;color:var(--text3);">${ol.items.length}項目 · ${fmtDate(ol.updatedAt)}</span>
+      ${labels.map((lb,i)=>`<span class="card-label-tag" style="cursor:pointer;" onclick="removeCardLabel(${i})" title="クリックで削除">${esc(lb)} ✕</span>`).join('')}
+    </div>
+    ${cardImgsHtml}
+    <div class="card-detail-card-content">${itemsHtml||'<div style="color:var(--text3);font-size:13px;">項目がありません</div>'}</div>
+  </div>
+  <!-- ラベル・画像追加UIはカード外に -->
+  <div style="max-width:720px;margin:.75rem auto 0;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+    <button class="card-img-upload-btn" onclick="wfOpenFromCard(currentCardOutlineId)">✏️ アウトラインを編集</button>
+    <div class="card-label-input-wrap" style="flex:1;min-width:180px;">
+      <input class="card-label-in" id="cardLabelIn" placeholder="ラベルを追加…" onkeydown="if(event.key==='Enter'&&!event.isComposing){event.preventDefault();addCardLabel();}">
+      <button class="card-img-upload-btn" onclick="addCardLabel()">＋ ラベル</button>
+    </div>
+    <button class="card-img-upload-btn" onclick="document.getElementById('cardImgInput').click()">🖼️ 画像を追加</button>
+    <button class="card-img-upload-btn" onclick="openImgLibrary('card')">📂 ライブラリ</button>
+    <input type="file" id="cardImgInput" accept="image/*" multiple style="display:none" onchange="onCardImageSelected(event)">
+  </div>`;
+
+  if(detail)detail.style.display='flex';
+
+  // 関連カード（同じラベルのもの）
+  const related=document.getElementById('cardRelated');
+  if(related){
+    const labels=ol.labels||[];
+    // 関連カードとその一致ラベルを収集
+    const relatedItems=labels.length
+      ? outlines.filter(x=>x.id!==outlineId)
+          .map(x=>{
+            const matchLabels=(x.labels||[]).filter(l=>labels.includes(l));
+            return matchLabels.length?{ol:x,matchLabels}:null;
+          })
+          .filter(Boolean)
+          .sort((a,b)=>b.matchLabels.length-a.matchLabels.length) // 一致数が多い順
+          .slice(0,20)
+      : [];
+    if(relatedItems.length){
+      related.style.display='flex';
+      related.innerHTML=`<div class="card-related-hd">関連カード</div>`
+        +relatedItems.map(({ol:ro,matchLabels})=>{
+          const img=ro.images?.[0]||null;
+          // テキストプレビュー（最初の2行）
+          const previewLines=ro.items.slice(0,3).map(it=>{
+            let text=it.text||'';
+            if(!it.text&&it.id&&!it.id.startsWith('reply:')){const p=posts.find(x=>x.id===it.id);text=p?cleanText(p.content):'';}
+            return text.split('\n')[0].slice(0,40);
+          }).filter(Boolean).slice(0,2);
+          // テキストプレビュー（画像あり:3行、なし:5行）
+          const maxLines=img?3:5;
+          const textLines=ro.items.slice(0,10).map(it=>{
+            let text=it.text||'';
+            if(!it.text&&it.id&&!it.id.startsWith('reply:')){const p=posts.find(x=>x.id===it.id);text=p?cleanText(p.content):'';}
+            return text.split('\n')[0].slice(0,38);
+          }).filter(Boolean).slice(0,maxLines);
+          return`<div class="card-related-thumb" onclick="openCardDetail('${ro.id}')">
+            <div class="card-related-thumb-title">${esc(ro.title||'無題')}</div>
+            ${img?`<img src="${img}" loading="lazy">`:''}
+            <div style="flex:1;overflow:hidden;">
+              ${textLines.map(l=>`<div style="font-family:'Hiragino Kaku Gothic ProN',sans-serif;font-size:10px;color:var(--text2);line-height:1.6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(l)}</div>`).join('')}
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:3px;flex-shrink:0;">
+              ${matchLabels.map(l=>`<span style="font-family:'Hiragino Kaku Gothic ProN',sans-serif;font-size:9px;padding:1px 6px;border-radius:20px;background:var(--accent);color:#fff;">${esc(l)}</span>`).join('')}
+            </div>
+          </div>`;
+        }).join('');
+    } else {
+      related.style.display='none';
+    }
+  }
+}
+
+function addCardLabel(){
+  const ol=outlines.find(x=>x.id===currentCardOutlineId);if(!ol)return;
+  const input=document.getElementById('cardLabelIn');if(!input)return;
+  const val=input.value.trim();if(!val)return;
+  if(!ol.labels)ol.labels=[];
+  if(!ol.labels.includes(val))ol.labels.push(val);
+  input.value='';
+  ol.updatedAt=Date.now();save();
+  openCardDetail(currentCardOutlineId);renderCardGrid();
+}
+
+function removeCardLabel(idx){
+  const ol=outlines.find(x=>x.id===currentCardOutlineId);if(!ol||!ol.labels)return;
+  ol.labels.splice(idx,1);
+  ol.updatedAt=Date.now();save();
+  openCardDetail(currentCardOutlineId);renderCardGrid();
+}
+
+async function onCardImageSelected(e){
+  const files=[...e.target.files];e.target.value='';
+  const ol=outlines.find(x=>x.id===currentCardOutlineId);if(!ol)return;
+  if(!ol.images)ol.images=[];
+  for(const file of files){
+    const dataUrl=await resizeImage(file,1200,0.85);
+    ol.images.push(dataUrl); // 先にbase64
+  }
+  ol.updatedAt=Date.now();save();
+  openCardDetail(currentCardOutlineId);
+  // Storageにアップロード
+  if(currentUser){
+    const localImgs=ol.images.filter(u=>u.startsWith('data:')).map(u=>({dataUrl:u}));
+    if(localImgs.length){
+      const urls=await uploadImagesToStorage(localImgs);
+      ol.images=ol.images.filter(u=>!u.startsWith('data:')).concat(urls);
+      ol.updatedAt=Date.now();save();
+      openCardDetail(currentCardOutlineId);
+    }
+  }
+}
+
+function removeCardImage(idx){
+  const ol=outlines.find(x=>x.id===currentCardOutlineId);if(!ol||!ol.images)return;
+  ol.images.splice(idx,1);
+  ol.updatedAt=Date.now();save();
+  openCardDetail(currentCardOutlineId);
+}
+
+function wfOpenFromCard(outlineId){
+  switchMain('think');
+  setTimeout(()=>wfOpen(outlineId),50);
+}
+
+function closeCardDetail(){
+  const detail=document.getElementById('cardDetail');
+  if(detail)detail.style.display='none';
+  currentCardOutlineId=null;
+}
+
+function outlineToCosensetText(ol){
+  const lines=[ol.title];
+  ol.items.forEach(it=>{
+    const lvl=it.level||0;
+    let text='';
+    if(it.id.startsWith('reply:')){text=it._replyContent||'';}
+    else{const p=posts.find(x=>x.id===it.id);text=p?cleanText(p.content):'（削除済み）';}
+    if(!text.trim())return;
+    const indent='\t'.repeat(lvl+1);
+    text.split('\n').filter(l=>l.trim()).forEach(line=>{
+      lines.push(`${indent}${line.trim()}`);
+    });
+  });
+  return lines.join('\n');
+}
+
+function renderCard(outlineId){
+  currentCardOutlineId=outlineId;
+  renderCardSidebar();
+  const ol=outlines.find(x=>x.id===outlineId);
+  const title=document.getElementById('cardTitle');
+  const content=document.getElementById('cardContent');
+  const copyBtn=document.getElementById('cardCopyBtn');
+  const exportBtn=document.getElementById('cardExportBtn');
+  if(!ol){return;}
+  if(title)title.textContent=ol.title;
+  if(copyBtn)copyBtn.style.display='';
+  if(exportBtn)exportBtn.style.display='';
+  const cosenseText=outlineToCosensetText(ol);
+  if(content){
+    const linesHtml=ol.items.map(it=>{
+      const lvl=it.level||0;
+      let text='';
+      if(it.id.startsWith('reply:')){text=it._replyContent||'';}
+      else{const p=posts.find(x=>x.id===it.id);text=p?cleanText(p.content):'（削除済み）';}
+      if(!text.trim())return'';
+      const lines=text.split('\n').filter(l=>l.trim());
+      return`<div style="padding:3px 0 3px ${lvl*20}px;display:flex;align-items:baseline;gap:6px;line-height:1.75;">
+        <span style="color:var(--accent-m);flex-shrink:0;">・</span>
+        <div style="font-size:14px;color:var(--text);">${lines.map((l,i)=>i===0?esc(l):`<span style="color:var(--text2);font-size:12px;">${esc(l)}</span>`).join('<br>')}</div>
+      </div>`;
+    }).filter(Boolean).join('');
+    content.innerHTML=`
+      <div class="card-cosense">
+        <div class="card-cosense-title">${esc(ol.title)}</div>
+        ${linesHtml||'<div style="color:var(--text3);font-size:13px;">項目がありません</div>'}
+      </div>
+      <div style="margin-top:1.5rem;">
+        <div style="font-family:'Hiragino Kaku Gothic ProN',sans-serif;font-size:10px;color:var(--text3);letter-spacing:.08em;margin-bottom:6px;">COSENSE / SCRAPBOX 形式</div>
+        <pre style="background:var(--bg3);border:0.5px solid var(--border);border-radius:var(--rsm);padding:12px 14px;font-family:monospace;font-size:12px;line-height:1.9;color:var(--text2);overflow-x:auto;white-space:pre-wrap;word-break:break-word;">${esc(cosenseText)}</pre>
+      </div>`;
+  }
+}
+
+function toggleCardExportMenu(){
+  const m=document.getElementById('cardExportMenu');if(!m)return;
+  m.style.display=m.style.display==='none'?'block':'none';
+  if(m.style.display==='block'){
+    const close=()=>{m.style.display='none';document.removeEventListener('click',close);};
+    setTimeout(()=>document.addEventListener('click',close),10);
+  }
+}
+
+function copyCardText(){
+  const ol=outlines.find(x=>x.id===currentCardOutlineId);if(!ol)return;
+  navigator.clipboard.writeText(outlineToCosensetText(ol)).then(()=>{
+    const btns=document.querySelectorAll('.card-copy-btn');
+    btns.forEach(btn=>{const orig=btn.textContent;btn.textContent='✓ コピー済';setTimeout(()=>{btn.textContent=orig;},1500);});
+  });
+}
+
+function exportCardText(fmt='txt'){
+  const ol=outlines.find(x=>x.id===currentCardOutlineId);if(!ol)return;
+  document.getElementById('cardExportMenu').style.display='none';
+  const name=ol.title||'card';
+  if(fmt==='cosense'){
+    const text=outlineToCosensetText(ol);
+    dl(new Blob([text],{type:'text/plain;charset=utf-8'}),name+'.txt');
+  } else if(fmt==='md'){
+    const items=ol.items.map(it=>{
+      let text=it.text||'';
+      if(!text&&it.id&&!it.id.startsWith('reply:')){const p=posts.find(x=>x.id===it.id);text=p?cleanText(p.content):'';}
+      if(!text.trim())return'';
+      return`${'  '.repeat(it.level||0)}- ${text.replace(/\n/g,' ')}`;
+    }).filter(Boolean).join('\n');
+    const md=`# ${ol.title||'無題'}\n\n${items}\n`;
+    dl(new Blob([md],{type:'text/markdown;charset=utf-8'}),name+'.md');
+  } else {
+    // txt: タブインデント
+    const lines=(ol.title||'無題')+'\n\n'+ol.items.map(it=>{
+      let text=it.text||'';
+      if(!text&&it.id&&!it.id.startsWith('reply:')){const p=posts.find(x=>x.id===it.id);text=p?cleanText(p.content):'';}
+      if(!text.trim())return'';
+      return'\t'.repeat(it.level||0)+text;
+    }).filter(Boolean).join('\n');
+    dl(new Blob([lines],{type:'text/plain;charset=utf-8'}),name+'.txt');
+  }
+}
+
+function exportBackup(){
+  const data={version:20,exportedAt:new Date().toISOString(),posts,notes,outlines};
+  const date=new Date().toISOString().slice(0,10);
+  dl(new Blob([JSON.stringify(data,null,2)],{type:'application/json;charset=utf-8'}),
+    `thinknotes-backup-${date}.json`);
+}
+function importBackup(){
+  const input=document.createElement('input');
+  input.type='file';input.accept='.json';
+  input.onchange=async e=>{
+    const file=e.target.files[0];if(!file)return;
+    try{
+      const data=JSON.parse(await file.text());
+      if(!data.posts||!data.notes){alert('有効なバックアップファイルではありません');return;}
+      if(!confirm(`復元しますか？\n投稿：${data.posts.length}件　ノート：${data.notes.length}件\n※現在のデータは上書きされます`))return;
+      posts=data.posts||[];notes=data.notes||[];outlines=data.outlines||[];
+      notes.forEach(n=>{
+        if(!n.items)n.items=[];if(!n.stickies)n.stickies=[];
+        if(!n.paragraphs)n.paragraphs=n.body?n.body.split('\n').filter(l=>l.trim()):[];
+      });
+      posts.forEach(p=>{if(!p.replies)p.replies=[];});
+      save();renderSidebar();renderFeed();
+      alert('✓ 復元が完了しました');
+    }catch(err){alert('読み込みエラー: '+err.message);}
+  };
+  input.click();
+}
+
 function loadLocal(){
   try{posts=JSON.parse(localStorage.getItem(KP)||'[]');}catch(e){posts=[];}
   try{notes=JSON.parse(localStorage.getItem(KN)||'[]');}catch(e){notes=[];}
@@ -1471,7 +2461,6 @@ function loadLocal(){
   if(!posts.length)posts=DEMO_POSTS;
   if(!notes.length)notes=DEMO_NOTES;
 }
-
 // ─── State ────────────────────────────────────────────────
 const KP='tn_posts_v20', KN='tn_notes_v20', KO='tn_outlines_v20';
 let posts=[], notes=[], outlines=[];
@@ -1505,42 +2494,178 @@ function save(){
   localStorage.setItem(KN,JSON.stringify(notes));
   localStorage.setItem(KO,JSON.stringify(outlines));
   clearTimeout(saveTimer);
-  saveTimer=setTimeout(saveToSyncFile,800);
+  saveTimer=setTimeout(saveToSupabase,800); // 1.5s→0.8sに短縮
 }
-
-// ページが非表示・閉じるときにファイルへ保存
-document.addEventListener('visibilitychange',()=>{
-  if(document.visibilityState==='hidden'){clearTimeout(saveTimer);saveToSyncFile();}
-});
-window.addEventListener('beforeunload',()=>{clearTimeout(saveTimer);saveToSyncFile();});
 
 // ページが非表示になるとき・閉じるときに即保存
-
-
-
-
-function initAuth(){
-  // ローカルモード：ログイン不要、即起動
-  loadLocal();
-  loadCalSettings();
-  // ファイルハンドルをIndexedDBから復元
-  setTimeout(tryReconnectFile, 100);
-  // 前回ファイル名の表示（未接続状態）
-  const fname=localStorage.getItem('tn_sync_filename');
-  if(fname){
-    const el=document.getElementById('fileSyncStatus');
-    if(el){el.textContent=`📂 ${fname}（未接続）`;el.style.display='';el.style.color='var(--text3)';}
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='hidden'&&currentUser){
+    clearTimeout(saveTimer);
+    saveToSupabase();
   }
+});
+window.addEventListener('beforeunload',()=>{
+  if(currentUser){clearTimeout(saveTimer);saveToSupabase();}
+});
+
+// ─── Helpers ─────────────────────────────────────────────
+function extractTags(t){return[...new Set((t.match(/#[^\s#、。！？,.!?]+/g)||[]).map(x=>x.slice(1)))]}
+function allTagsMap(){const m={};posts.forEach(p=>extractTags(p.content).forEach(t=>{m[t]=(m[t]||0)+1;}));return m;}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');}
+function pad(n){return String(n).padStart(2,'0');}
+function fmtDate(ts){const d=new Date(ts);return`${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}`;}
+function fmtDateISO(ts){return new Date(ts).toISOString().slice(0,10);}
+function fmtDt(ts){const d=new Date(ts);return`${d.getMonth()+1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;}
+function dl(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();}
+function truncate(s,len){if(!s)return'';return s.length<=len?s:s.slice(0,len)+'…';}
+function cleanText(content){
+  return content.split('\n').map(l=>l.replace(/^│\s?/,'')).join('\n')
+    .replace(/#[^\s#、。！？,.!?]+/g,'').replace(/[ \t]+\n/g,'\n').trim();
 }
 
-function showApp(){}
-function showLogin(){}
-async function signOut(){}
-async function signInWithPassword(){}
-async function signUpWithPassword(){}
-async function loadFromSupabase(){}
-async function saveToSupabase(){}
-async function forceSyncFromSupabase(){}
+// ─── Phase switching ─────────────────────────────────────
+function switchMain(main){
+  // 後方互換のため残す
+  if(main==='log')switchPhase(1);
+  else if(main==='think')switchPhase(3);
+  else if(main==='note')switchPhase(4);
+}
+
+function switchPhase(n){
+  currentPhase=n;
+  [1,2,3,4,5].forEach(i=>{
+    document.getElementById('ps-'+i)?.classList.toggle('active',i===n);
+    document.getElementById('phase'+i)?.classList.toggle('active',i===n);
+  });
+  document.getElementById('tagSidebar').style.display=n===1?'':'none';
+  document.getElementById('searchWrap').style.display=n===1?'':'none';
+  if(n===1){renderFeed();}
+  if(n===2){
+    renderCalendar();
+    if(!calSelectedDate){
+      const today=new Date();
+      selectCalDay(calDateStr(today.getFullYear(),today.getMonth(),today.getDate()));
+    } else {
+      renderCalDayView(calSelectedDate);
+      const compose=document.getElementById('calDayCompose');
+      if(compose)compose.style.display='';
+    }
+    if(window.innerWidth<=640){
+      document.getElementById('mobileToolbar')?.style && (document.getElementById('mobileToolbar').style.display='none');
+      document.getElementById('mobileBskyBar')?.style && (document.getElementById('mobileBskyBar').style.display='none');
+    }
+  }
+  if(n===1&&window.innerWidth<=640){
+    document.getElementById('mobileToolbar')?.style && (document.getElementById('mobileToolbar').style.display='');
+    document.getElementById('mobileBskyBar')?.style && (document.getElementById('mobileBskyBar').style.display='');
+  }
+  if(n===3){wfRenderSidebar();}
+  if(n===4){renderNotesList();}
+  if(n===5){renderCardView();}
+}
+
+// ─── 画像 ────────────────────────────────────────────────
+let pendingImages=[]; // [{dataUrl}]
+const pendingReplyImages={}; // pid -> [{dataUrl}]
+
+function openImagePicker(){document.getElementById('imageInput').click();}
+
+async function onImageSelected(e){
+  const files=[...e.target.files];
+  e.target.value='';
+  for(const file of files){
+    const dataUrl=await resizeImage(file,800,0.72);
+    pendingImages.push({dataUrl});
+  }
+  renderImgPreview();
+  // 入力欄を展開
+  const ta=document.getElementById('composeTA');
+  if(ta){ta.classList.remove('mobile-collapsed');ta.classList.add('mobile-expanded');}
+}
+
+function resizeImage(file,maxW,quality){
+  return new Promise(res=>{
+    const img=new Image();
+    const url=URL.createObjectURL(file);
+    img.onload=()=>{
+      URL.revokeObjectURL(url);
+      let w=img.width,h=img.height;
+      if(w>maxW){h=Math.round(h*maxW/w);w=maxW;}
+      const canvas=document.createElement('canvas');
+      canvas.width=w;canvas.height=h;
+      canvas.getContext('2d').drawImage(img,0,0,w,h);
+      res(canvas.toDataURL('image/jpeg',quality));
+    };
+    img.src=url;
+  });
+}
+
+function renderImgPreview(){
+  const el=document.getElementById('composeImgPreview');if(!el)return;
+  el.innerHTML=pendingImages.map((im,i)=>`
+    <div class="compose-img-thumb">
+      <img src="${im.dataUrl}">
+      <button class="compose-img-thumb-del" onclick="removePendingImg(${i})">✕</button>
+    </div>`).join('');
+  el.style.display=pendingImages.length?'flex':'none';
+}
+
+function removePendingImg(i){
+  pendingImages.splice(i,1);renderImgPreview();
+}
+
+function openLightbox(src){
+  const lb=document.createElement('div');
+  lb.className='img-lightbox';
+  lb.innerHTML=`<img src="${src}">`;
+  lb.onclick=()=>lb.remove();
+  document.body.appendChild(lb);
+}
+
+// ─── Calendar ────────────────────────────────────────────
+function calDateStr(y,m,d){return`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;}
+function calDateLabel(dateStr){
+  const d=new Date(dateStr+'T00:00:00');
+  const days=['日','月','火','水','木','金','土'];
+  return`${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${days[d.getDay()]}）`;
+}
+function postsForDate(dateStr){
+  return posts.filter(p=>{
+    const d=new Date(p.createdAt);
+    return calDateStr(d.getFullYear(),d.getMonth(),d.getDate())===dateStr;
+  }).sort((a,b)=>a.createdAt-b.createdAt);
+}
+function getCatForPost(p){
+  const tags=extractTags(p.content);
+  if(calLogTags.length&&tags.some(t=>calLogTags.includes(t)))return'log';
+  if(calDevTags.length&&tags.some(t=>calDevTags.includes(t)))return'dev';
+  if(calKnowledgeTags.length&&tags.some(t=>calKnowledgeTags.includes(t)))return'knowledge';
+  return'other';
+}
+function loadCalSettings(){
+  const s=JSON.parse(localStorage.getItem('tn_cal_settings')||'{}');
+  calLogTags=(s.logTags||'').split(',').map(t=>t.trim()).filter(Boolean);
+  calDevTags=(s.devTags||'').split(',').map(t=>t.trim()).filter(Boolean);
+  calKnowledgeTags=(s.knowledgeTags||'').split(',').map(t=>t.trim()).filter(Boolean);
+  const li=document.getElementById('calLogTags');
+  const di=document.getElementById('calDevTags');
+  const ki=document.getElementById('calKnowledgeTags');
+  if(li)li.value=s.logTags||'';
+  if(di)di.value=s.devTags||'';
+  if(ki)ki.value=s.knowledgeTags||'';
+}
+async function loadCalSettingsFromSupabase(){
+  if(!currentUser)return;
+  const {data,error}=await sb.from('thinkdata')
+    .select('data_value').eq('user_id',currentUser.id).eq('data_key','cal_settings').single();
+  if(error||!data)return;
+  const s=data.data_value||{};
+  localStorage.setItem('tn_cal_settings',JSON.stringify(s));
+  loadCalSettings();
+  renderCalendar();
+  if(calSelectedDate)renderCalDayView(calSelectedDate);
+}
 function saveCalSettings(){
   const logVal=document.getElementById('calLogTags')?.value||'';
   const devVal=document.getElementById('calDevTags')?.value||'';
@@ -1550,7 +2675,13 @@ function saveCalSettings(){
   calLogTags=logVal.split(',').map(t=>t.trim()).filter(Boolean);
   calDevTags=devVal.split(',').map(t=>t.trim()).filter(Boolean);
   calKnowledgeTags=knowledgeVal.split(',').map(t=>t.trim()).filter(Boolean);
-  saveToSyncFile(); // ファイルにも保存
+  // Supabaseにも保存
+  if(currentUser){
+    sb.from('thinkdata').upsert(
+      {user_id:currentUser.id,data_key:'cal_settings',data_value:s,updated_at:new Date().toISOString()},
+      {onConflict:'user_id,data_key'}
+    ).then(({error})=>{if(error)console.warn('cal_settings save error:',error);});
+  }
   renderCalendar();
   if(calSelectedDate)renderCalDayView(calSelectedDate);
 }
@@ -1923,9 +3054,27 @@ function renderPost(p){
   </div>`;
 }
 
-// 画像はbase64のままJSONファイルに保存（Supabase Storage不要）
+// 画像をSupabase Storageにアップロードしてurl配列を返す
 async function uploadImagesToStorage(pendingImgs){
-  return pendingImgs.map(i=>i.dataUrl);
+  if(!currentUser||!pendingImgs.length)return pendingImgs.map(i=>i.dataUrl);
+  const urls=[];
+  for(const im of pendingImgs){
+    try{
+      // base64 → Blob
+      const res=await fetch(im.dataUrl);
+      const blob=await res.blob();
+      const ext=blob.type.includes('png')?'png':'jpg';
+      const path=`${currentUser.id}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+      const {data,error}=await sb.storage.from('thinknotes-images').upload(path,blob,{contentType:blob.type});
+      if(error)throw error;
+      const {data:{publicUrl}}=sb.storage.from('thinknotes-images').getPublicUrl(path);
+      urls.push(publicUrl);
+    }catch(e){
+      console.error('upload error:',e);
+      urls.push(im.dataUrl); // 失敗時はbase64フォールバック
+    }
+  }
+  return urls;
 }
 
 // Post CRUD
@@ -1943,8 +3092,9 @@ async function submitPost(){
   ta.classList.remove('mobile-expanded');ta.classList.add('mobile-collapsed');
   save();renderFeed();renderSidebar();
   // バックグラウンドでStorageにアップロードしてURLに差し替え
-  if(localImgs.length){
-    // base64のまま保持（ファイル同期で移行）
+  if(localImgs.length&&currentUser){
+    const urls=await uploadImagesToStorage(localImgs);
+    p.images=urls;
     save();
   }
   if(postToBskyFlag){
@@ -1967,9 +3117,21 @@ async function postExistingToBsky(pid){
   }
 }
 function showBskyPostStatus(pid,ok,mode,error){
+  // トースト表示（renderFeedによるDOM再描画後も消えない）
+  let toast=document.getElementById('bskyToast');
+  if(!toast){
+    toast=document.createElement('div');
+    toast.id='bskyToast';
+    toast.style.cssText='position:fixed;bottom:20px;right:20px;z-index:9999;padding:10px 16px;border-radius:var(--r);font-family:\'Hiragino Kaku Gothic ProN\',sans-serif;font-size:13px;box-shadow:0 4px 16px rgba(0,0,0,.15);transition:opacity .3s;';
+    document.body.appendChild(toast);
+  }
   const label=mode==='reply'?'🦋 返信をBskyに投稿':'🦋 Bskyに投稿';
-  showToast(ok?label+'済':'🦋 Bsky失敗: '+(error||''), ok?2500:4000);
-  if(ok)showToast(label+'済');
+  toast.textContent=ok?label+'済':'🦋 Bsky失敗: '+(error||'');
+  toast.style.background=ok?'var(--teal)':'var(--red)';
+  toast.style.color='#fff';
+  toast.style.opacity='1';
+  clearTimeout(toast._t);
+  toast._t=setTimeout(()=>{toast.style.opacity='0';},3000);
 }
 
 // ─── Reply (thread) ──────────────────────────────────────
@@ -2025,8 +3187,9 @@ async function submitReply(pid){
   replyingToId=null;save();renderFeed();
 
   // 画像をStorageにアップロード
-  if(localImgs.length){
-    save();
+  if(localImgs.length&&currentUser){
+    const urls=await uploadImagesToStorage(localImgs);
+    reply.images=urls;save();renderFeed();
   }
 
   // Bluesky投稿
