@@ -1460,6 +1460,65 @@ function showToast(msg,duration=2500){
 }
 
 // セッションをlocalStorageから直接読む（getSession()のハング回避）
+function loadLocal(){
+  try{posts=JSON.parse(localStorage.getItem(KP)||'[]');}catch(e){posts=[];}
+  try{notes=JSON.parse(localStorage.getItem(KN)||'[]');}catch(e){notes=[];}
+  try{outlines=JSON.parse(localStorage.getItem(KO)||'[]');}catch(e){outlines=[];}
+  notes.forEach(n=>{
+    if(!n.items)n.items=[];if(!n.stickies)n.stickies=[];
+    if(!n.paragraphs)n.paragraphs=n.body?n.body.split('\n').filter(l=>l.trim()):[];
+  });
+  if(!posts.length)posts=DEMO_POSTS;
+  if(!notes.length)notes=DEMO_NOTES;
+}
+
+// ─── State ────────────────────────────────────────────────
+const KP='tn_posts_v20', KN='tn_notes_v20', KO='tn_outlines_v20';
+let posts=[], notes=[], outlines=[];
+let currentPhase=1;
+let currentFilter='all', currentTag=null, searchQuery='';
+let selectedIds=new Set();
+let currentNoteId=null;
+let currentOutline=[];   // [{id,level}]
+let currentOutlineId=null;
+let saveTimer=null;
+const MAX_LEVEL=4;
+// outline drag
+let outDragIdx=null;
+// sticky
+let _syncScrolling=false;
+let _pickerStickyId=null;
+// post edit
+let editingPostId=null, editingTagPostId=null, replyingToId=null;
+let editingReplyKey=null;
+const expandedOutlineCards=new Set();
+// カレンダー
+let calYear=new Date().getFullYear(), calMonth=new Date().getMonth();
+let calSelectedDate=null; // 'YYYY-MM-DD'
+let calCatFilter={log:true,dev:true,knowledge:true,other:true};
+let calLogTags=[], calDevTags=[], calKnowledgeTags=[];
+
+// ─── Persist (local fallback) ─────────────────────────────
+function load(){loadLocal();}
+function save(){
+  localStorage.setItem(KP,JSON.stringify(posts));
+  localStorage.setItem(KN,JSON.stringify(notes));
+  localStorage.setItem(KO,JSON.stringify(outlines));
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(saveToSyncFile,800);
+}
+
+// ページが非表示・閉じるときにファイルへ保存
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='hidden'){clearTimeout(saveTimer);saveToSyncFile();}
+});
+window.addEventListener('beforeunload',()=>{clearTimeout(saveTimer);saveToSyncFile();});
+
+// ページが非表示になるとき・閉じるときに即保存
+
+
+
+
 function initAuth(){
   // ローカルモード：ログイン不要、即起動
   loadLocal();
